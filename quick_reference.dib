@@ -1,0 +1,458 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"},{"aliases":[],"languageName":"SQLite","name":"sql-file-db"},{"aliases":[],"languageName":"SQLite","name":"sql-in-mem-db"},{"aliases":[],"languageName":"T-SQL","name":"sql-mssql-poptemp"},{"aliases":[],"languageName":"T-SQL","name":"sql-polyglot-example-db"}]}}
+
+#!markdown
+
+# Polyglot Notebook Quick Reference
+
+# Documentation
+
+The most helpful documentation I've found is in the .NET Interactive GitHub repository. Start with the [dotnet/interactive/docs/FAQ.md](https://github.com/dotnet/interactive/blob/main/docs/FAQ.md) file and explore the other files in that directory.
+
+# Installing the extension in VS Code
+
+Search for the `Polyglot Notebooks` extension in VS Code and install.
+
+**Note: You will need the .NET SDK installed.** This notebook uses .NET 8.0.
+
+# Helpful tips while exploring
+
+This notebook is generally meant to be executed top-to-bottom. There are some cases where one code block can only successfully be executed if a previous code block has run.
+
+If something isn't responding as you would expect, try restarting the kernel in the top toolbar.
+
+The magic commands shown here (like `#r "nuget:...."` for installing packages) can be executed in the `C# Script` code cell.
+
+# Types of notebooks
+
+There are two file formats you can use -- `.dib` and `.ipynb`.
+
+`.ipynb` is the standard Jupyter notebook format, while `.dib` is a new file format introduced with Polyglot notebooks. Both support using different kernels, but `.dib` does not store outputs in the file after being run.
+
+The file format itself differs a bit as well, with `.ipynb` using JSON and `.dib` being more of a plaintext based format.
+
+Some reasons to prefer the `.dib` format include:
+- Switch between subkernels and languages easily
+- Simpler file format
+- Avoid conflict with other Jupyter notebook extensions
+
+# Displaying values
+
+By convention, you can end a code block with a variable name to display its contents.
+
+#!csharp
+
+var valueType = 123;
+
+valueType
+
+#!markdown
+
+If you would like to display multiple values...
+
+#!csharp
+
+var int1 = 123;
+var int2 = 456;
+
+int1.Display(); // extension method available on all objects
+int2.Display();
+$"int1 == int2 results in {int1 == int2}"
+
+#!markdown
+
+You can also display complex types.
+
+#!csharp
+
+public class ComplexType
+{
+    public int Number { get; set; } = 123;
+    public string Text { get; set; } = "DEFAULT";
+    public DateTime DateTime { get; set; } = DateTime.Now;
+}
+
+var ct = new ComplexType();
+
+ct
+
+#!markdown
+
+Lists, too.
+
+#!csharp
+
+var stringList = new string[5];
+Array.Fill(stringList, "boilerplate value");
+
+stringList
+
+#!markdown
+
+## MIME types
+
+The values being displayed can be formatted specifically by using MIME types.
+
+For example:
+
+#!csharp
+
+ct.Display(); // This defaults to "text/html" by default for an expandable formatted view
+
+#!csharp
+
+ct.Display("text/html"); // Looks the same as before
+
+#!csharp
+
+ct.Display("application/json");
+
+#!csharp
+
+ct.Display("text/plain");
+
+#!markdown
+
+There are also ways to configure formatting settings for a notebook, like default formats, number of items to display in lists, and more.
+
+#!csharp
+
+using Microsoft.DotNet.Interactive.Formatting;
+
+Formatter.ListExpansionLimit = 10;
+Formatter.DefaultMimeType = "text/plain";
+Formatter.SetPreferredMimeTypesFor(typeof(ComplexType), "application/json");
+
+#!markdown
+
+# Variables and notebook state
+
+State is maintained between code blocks in notebooks for a given kernel. You can reference a class definition, a variable, a method, etc. from previously executed code blocks earlier in the notebook.
+
+#!csharp
+
+var counter = 0;
+
+counter
+
+#!markdown
+
+Try rerunning the following code block a few times. Open the `Variables` tab a the top as well.
+
+#!csharp
+
+counter++;
+
+counter
+
+#!markdown
+
+.NET interactive behaves a bit differently than regular compiled applications. You can redefine classes, redeclare variables with different types, and more.
+
+#!csharp
+
+string counter = "one";
+
+#!markdown
+
+The variables are only persisted while the kernel is active -- once you close the notebook (or restart it in the toolbar at the top), they are cleared.
+
+#!markdown
+
+# Installing NuGet Packages
+
+#!markdown
+
+You can install a NuGet package for use in the current notebook. To explore more easily, you can add a NuGet Gallery extension in VS Code. (Make sure these are in a C# script code cell.)
+
+#!csharp
+
+#r "nuget:Bogus,35.5.1"
+#r "nuget:SandDance.InteractiveExtension"
+
+#!markdown
+
+You can use these libraries then as you would in any other C# program.
+
+#!csharp
+
+using Bogus;
+
+public class Student
+{
+    public string Name { get; set; }
+    public int Age { get; set; }
+    public int GradeLevel { get; set; }
+    public List<int> Grades { get; set; }
+}
+
+var studentFaker = new Faker<Student>()
+    .RuleFor(s => s.Name, f => f.Person.FullName)
+    .RuleFor(s => s.Age, f => f.Random.Number(5, 18))
+    .RuleFor(s => s.GradeLevel, (f, s) => s.Age - 6 + f.Random.Number(-1, 1))
+    .RuleFor(s => s.Grades, f => f.Make(10, () => f.Random.Number(50, 100)));
+
+var fakeStudents = studentFaker.Generate(1000);
+
+#!markdown
+
+Some of these NuGet packages can be .NET Interactive extensions, like the `SandDance.InteractiveExtension` is. These may use special hooks in .NET Interactive and the notebooks to extend their functionality.
+
+#!csharp
+
+fakeStudents.Select(s => new {
+    s.Name,
+    s.GradeLevel,
+    GradeAverage = s.Grades.Average()
+}).ExploreWithSandDance().Display();
+
+#!markdown
+
+# Inputs
+
+You can prompt for input to use in your code in plaintext:
+
+#!csharp
+
+#!value --from-value @input:"Enter a date to parse as DateOnly" --name userProvidedDate
+
+#!markdown
+
+In C#, I prefer to explicitly call `Kernel.GetInputAsync()` for the type safety.
+
+#!csharp
+
+using Microsoft.DotNet.Interactive;
+
+var input = await Kernel.GetInputAsync("Enter a date to parse as DateOnly");
+
+var dateOnly = DateOnly.Parse(input);
+dateOnly
+
+#!markdown
+
+For sensitive information and credentials, use `@password` or `Kernel.GetPasswordAsync()` instead. This will obscure the characters in the prompt as well as in the variables pane.
+
+#!csharp
+
+using Microsoft.DotNet.Interactive;
+
+string pw = null;
+
+var apiKey = await Kernel.GetPasswordAsync("Enter your local Ed-Fi API Key");
+var apiSecret = await Kernel.GetPasswordAsync("Enter your local Ed-Fi API Secret");
+
+#!markdown
+
+# Referencing External Files
+
+## Code files
+
+You can import source code from other files for certain languages, like `.cs` files for C#, `.js`, `.ps1`, and more.
+
+> **NOTE:**
+> 
+> The C# files are loaded in as .NET Interactive scripts. The `.cs` files should not include a namespace.
+
+#!csharp
+
+#load "examples/ExampleClass.cs"
+
+var example = new ExampleClass();
+
+example.GiveHighFive().Display();
+
+#!markdown
+
+# Databases
+
+Polyglot notebooks support connecting to various relational databases through `kernels` and the `#!connect` magic command. Once you connect to a database and name the kernel, it is available for querying in other code cells.
+
+Database support is generally managed in NuGet packages. Use the following commands to install the packages.
+
+#!csharp
+
+#r "nuget:Microsoft.DotNet.Interactive.SQLServer,*-*"
+
+#!csharp
+
+#r "nuget:Microsoft.DotNet.Interactive.SQLite,*-*"
+
+#!csharp
+
+#r "nuget:Microsoft.DotNet.Interactive.Kql,*-*"
+
+#!csharp
+
+#r "nuget:Microsoft.DotNet.Interactive.DuckDB,*-*"
+
+#!markdown
+
+## SQL Server
+
+The following example requires you to have a SQL Server instance running or accessible from your local machine.
+
+To use the following example as-is, make sure you have a SQL Server instance running as a default instance, and create a database named `PolyglotExample`.
+
+#!csharp
+
+#!connect mssql "Server=.;Database=PolyglotExample;Integrated Security=True;TrustServerCertificate=True;" --kernel-name polyglot-example-db
+
+#!markdown
+
+This command creates a new kernel in the current session with the specified connection strings. To change or remove it, simply restart the main kernel for the notebook in the toolbar at the top.
+
+Once a kernel is established, you can then use the SQL code cells to query through that kernel.
+
+There are two ways to reference the created DB kernel.
+
+1) Create a new code block and select the kernel you just created. It should be named `sql-<nameofkernel>`.
+
+#!sql-polyglot-example-db
+
+DROP TABLE IF EXISTS Users;
+CREATE TABLE Users (
+    UserId INT IDENTITY(1,1) PRIMARY KEY,
+    UserName NVARCHAR(50) NOT NULL,
+    Email NVARCHAR(100) NOT NULL
+);
+GO
+
+INSERT INTO Users (UserName, Email)
+VALUES
+    ('Alice', 'alice@example.com'),
+    ('Bob', 'bob@example.com'),
+    ('Charlie', 'charlie@example.com');
+GO
+
+#!markdown
+
+2) You can also point to a particular kernel within a generic `sql` block by using `#!sql-<nameofkernel>` at the top of the SQL block. This is useful if you need to show two queries from different kernels in the same block of code.
+
+#!sql
+
+#!sql-polyglot-example-db
+
+SELECT * FROM Users;
+
+#!markdown
+
+## SQLite - In-Memory
+
+The SQLite connection string with `Data Source=:memory:` is useful for quickly executing SQL commands in memory, however the database will be removed immediately when the code cell is completed.
+
+#!csharp
+
+#!connect sqlite "Data Source=:memory:" --kernel-name in-mem-db
+
+#!sql-in-mem-db
+
+CREATE TABLE IF NOT EXISTS FamilyMember (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    FirstName NVARCHAR(255) NOT NULL,
+    LastName NVARCHAR(255) NOT NULL
+);
+
+INSERT INTO FamilyMember (FirstName, LastName)
+VALUES
+    ("Michael", "Nichols")
+    ,("Chaney", "Nichols")
+    ,("Baxter", "Nichols") -- My terrier
+    ,("Ruffles", "Nichols"); -- My schnauzer
+
+SELECT * FROM FamilyMember;
+
+#!markdown
+
+Note that for the SQLite :memory: data source, any changes are lost outside of the current cell.
+
+#!sql-in-mem-db
+
+SELECT * FROM FamilyMember;
+
+#!markdown
+
+## SQLite - File
+
+SQLite also supports specifying a file to persist the data. If this is a filename, the file will be created in the same directory as the notebook. Absolute and relative paths can also be used, but the path must exist first.
+
+The file is created when the first query is executed against that kernel.
+
+#!pwsh
+
+New-Item -ItemType Directory -Path .\tmp -Force
+
+#!sql
+
+#!connect sqlite "Data Source=tmp/polyglot.db" --kernel-name file-db
+
+#!sql-file-db
+
+DROP TABLE IF EXISTS FamilyMember;
+
+CREATE TABLE FamilyMember (
+    Id INT IDENTITY(1,1) PRIMARY KEY,
+    FirstName NVARCHAR(255) NOT NULL,
+    LastName NVARCHAR(255) NOT NULL
+);
+
+INSERT INTO FamilyMember (FirstName, LastName)
+VALUES
+    ("Michael", "Nichols")
+    ,("Chaney", "Nichols")
+    ,("Baxter", "Nichols") -- My terrier
+    ,("Ruffles", "Nichols"); -- My schnauzer
+
+SELECT * FROM FamilyMember;
+
+#!markdown
+
+With data being persisted to a file, queries are not confined to a single code cell.
+
+#!sql-file-db
+
+SELECT * FROM FamilyMember;
+
+#!markdown
+
+## Querying multiple kernels
+
+Using the `#!sql-<nameofkernel>` magic command enables you to use queries against two different kernels in the same code block.
+
+To do so, create a code block using the `sql` kernel and use the magic command to set the context for the following queries.
+
+#!sql
+
+#!sql-file-db
+
+SELECT * FROM FamilyMember;
+
+#!sql-polyglot-example-db
+
+SELECT * FROM Users;
+
+#!markdown
+
+# Mermaid Diagrams
+
+#!markdown
+
+The notebooks also support creating and displaying diagrams with Mermaid.
+
+#!mermaid
+
+flowchart LR
+    vscode([Install VS Code])
+    dotnet([Install .NET SDK])
+    polyext([Install Polyglot Extension in VS Code])
+    use([Use Polyglot Notebooks for great good])
+    vscode --> polyext
+    polyext --> use
+    dotnet --> use
+
+#!markdown
+
+> **Tip:**
+> 
+> If the diagram fails to render, try restarting the kernel.
