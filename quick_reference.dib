@@ -330,8 +330,6 @@ GO
 
 2) You can also point to a particular kernel within a generic `sql` block by using `#!sql-<nameofkernel>` at the top of the SQL block. This is useful if you need to show two queries from different kernels in the same block of code.
 
-#!sql
-
 #!sql-polyglot-example-db
 
 SELECT * FROM Users;
@@ -422,8 +420,6 @@ Using the `#!sql-<nameofkernel>` magic command enables you to use queries agains
 
 To do so, create a code block using the `sql` kernel and use the magic command to set the context for the following queries.
 
-#!sql
-
 #!sql-file-db
 
 SELECT * FROM FamilyMember;
@@ -456,3 +452,46 @@ flowchart LR
 > **Tip:**
 > 
 > If the diagram fails to render, try restarting the kernel.
+
+#!markdown
+
+# HTTP requests
+
+There is an `HTTP Request` kernel that enables sending and viewing details about HTTP requests like headers, request body, and more.
+
+The general structure is below:
+
+```http
+<METHOD> <URL>
+Headers:
+    <HEADER NAME>: <HEADER VALUE>
+
+Request body:
+{
+    "example": "JSON body for appropriate request METHOD"
+}
+```
+
+The following examples use a public server hosted for development purposes called `httpbin`. For more information, visit its Swagger docs page at [https://httpbin.org/](https://httpbin.org/).
+
+#!http
+
+GET https://httpbin.org/get
+
+#!http
+
+POST https://httpbin.org/delay/3
+Headers:
+    Accept: application/json
+
+Request body:
+{
+    "name": "Michael"
+}
+
+#!http
+
+GET https://httpbin.org/ip
+Headers:
+    Accept: application/json
+
