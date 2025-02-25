@@ -1,0 +1,42 @@
+#!meta
+
+{"kernelInfo":{"defaultKernelName":"csharp","items":[{"aliases":[],"name":"csharp"}]}}
+
+#!markdown
+
+# Combine all files in directory
+
+Defaults to SQL use case, combines all files in the given directory that match the filename RegEx, adding a comment with the filename.
+
+#!csharp
+
+using System.Text.RegularExpressions;
+using System.IO;
+
+// Useful for combining separate SQL files into one file for convenience (e.g. quickly copying into SSMS, ChatGPT, etc.)
+public static void CombineFiles(string directory, string outputFilename = "combined.sql", string filePattern = @".*\.sql", string commentPrefix = "-- ")
+{
+    string outputFile = Path.Combine(directory, outputFilename);
+    using (var writer = new StreamWriter(outputFile, false))
+    {
+        var regex = new Regex(filePattern, RegexOptions.IgnoreCase);
+        foreach (var file in Directory.GetFiles(directory))
+        {
+            if (!regex.IsMatch(Path.GetFileName(file)))
+                continue;
+                
+            if (Path.GetFileName(file) == outputFilename)
+                continue;
+
+            // Write header with comment and file name
+            writer.WriteLine($"{commentPrefix}{Path.GetFileName(file)}");
+            // Write file content
+            writer.WriteLine(File.ReadAllText(file));
+            writer.WriteLine(); // Add an empty line between files
+        }
+    }
+}
+
+#!csharp
+
+CombineFiles("./example")

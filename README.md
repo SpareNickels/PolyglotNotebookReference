@@ -20,3 +20,7 @@ For some examples, you may also need additional software installed or configured
 ## Learning about Polyglot Notebooks
 
 Refer to the [quick_reference.dib](./quick_reference.dib) notebook to learn more about how to create and use Polyglot Notebooks.
+
+# Included Notebooks
+
+The [./notebooks](./notebooks/) directory includes notebooks with useful patterns, reusable code, or other reference materials.
